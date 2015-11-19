@@ -354,6 +354,11 @@
   // Calls the method named by functionOrKey on each value in the list.
   // Note: You will need to learn a bit about .apply to complete this.
   _.invoke = function(collection, functionOrKey, args) {
+    return _.map(collection, function(x) {
+      return typeof functionOrKey === "string" ?
+      x[functionOrKey].apply(x, args) :
+      functionOrKey.apply(x, args);
+    });
   };
 
   // Sort the object's values by a criterion produced by an iterator.
@@ -361,6 +366,11 @@
   // of that string. For example, _.sortBy(people, 'name') should sort
   // an array of people by their name.
   _.sortBy = function(collection, iterator) {
+    return collection.sort(function(a, b) {
+      return typeof iterator === "function" ?
+      iterator(a) - iterator(b) :
+      a[iterator] - b[iterator];
+    });
   };
 
   // Zip together two or more arrays with elements of the same index
@@ -369,6 +379,21 @@
   // Example:
   // _.zip(['a','b','c','d'], [1,2,3]) returns [['a',1], ['b',2], ['c',3], ['d',undefined]]
   _.zip = function() {
+    var zipped = [];
+    var zip = [];
+    var args = Array.prototype.slice.call(arguments);
+    var longest = args.sort(function(a, b) {
+      return b.length - a.length;
+    })[0];
+
+    _.each(longest, function(value, index) {
+      _.each(args, function(arg) {
+        zip.push(arg[index]);
+      });
+      zipped.push(zip);
+      zip = [];
+    });
+    return zipped;
   };
 
   // Takes a multidimensional array and converts it to a one-dimensional array.
@@ -376,16 +401,53 @@
   //
   // Hint: Use Array.isArray to check if something is an array
   _.flatten = function(nestedArray, result) {
+    var flattened = result || [];
+
+    _.each(nestedArray, function(value) {
+      if (Array.isArray(value)) {
+        _.flatten(value, flattened);
+      } else {
+        flattened.push(value);
+      }
+    });
+    return flattened;
   };
 
   // Takes an arbitrary number of arrays and produces an array that contains
   // every item shared between all the passed-in arrays.
   _.intersection = function() {
+    var first = arguments[0];
+    var args = Array.prototype.slice.call(arguments, 1);
+    var intersected = [];
+    _.each(first, function(x) {
+      _.each(args, function(y) {
+        if(_.contains(y, x)) {
+          intersected.push(x);
+        }
+      });
+    });
+    return intersected;
   };
 
   // Take the difference between one array and a number of other arrays.
   // Only the elements present in just the first array will remain.
   _.difference = function(array) {
+    var diff = [];
+    var args = Array.prototype.slice.call(arguments, 1);
+
+    _.each(array, function(value) {
+      var different = true;
+      _.each(args, function(arg) {
+        if (_.contains(arg, value)) {
+          different = false;
+        }
+      });
+      if (different) {
+        diff.push(value);
+      }
+    });
+    return diff;
+
   };
 
   // Returns a function, that, when invoked, will only be triggered at most once
@@ -394,5 +456,18 @@
   //
   // Note: This is difficult! It may take a while to implement.
   _.throttle = function(func, wait) {
+    var alreadyCalled = false;
+
+    return function() {
+      var args = Array.prototype.slice.call(arguments);
+      if (!alreadyCalled) {
+        func.apply(this, args);
+        alreadyCalled = true;
+
+        setTimeout(function() {
+          alreadyCalled = false;
+        }, wait);
+      }
+    };
   };
 }());
